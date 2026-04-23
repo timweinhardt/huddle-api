@@ -8,6 +8,7 @@ on:
 
 env:
   LAMBDA_KEY: lambda_package.zip
+  LAMBDA_NAME: dev-huddle-api
 
 jobs:
   build:
@@ -73,3 +74,10 @@ jobs:
               LambdaS3Key=${{ env.LAMBDA_KEY }} \
               Environment="dev" \
             --capabilities CAPABILITY_NAMED_IAM
+
+      - name: Update Lambda Code
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ env.LAMBDA_NAME }} \
+            --s3-bucket ${{ vars.AWS_LAMBDA_BUCKET_NAME }} \
+            --s3-key ${{ env.LAMBDA_KEY }}
