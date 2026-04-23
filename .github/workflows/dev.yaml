@@ -1,0 +1,46 @@
+name: Deploy to Dev
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+env:
+  LAMBDA_KEY: lambda_package-${{ github.sha }}.zip
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_DEV_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_DEV_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEV_REGION }}
+
+      - name: Install Lambda Dependencies
+        run: |
+          mkdir -p package
+          pip install -r requirements.txt -t package
+
+      - name: Bundle Lambda Function
+        run: |
+          cp src/lambda_function.py package/
+          cd package
+          zip -r ../${{ env.LAMBDA_KEY }} .
+
+      - name: Upload to S3
+        run: |
+          aws s3 cp ${{ env.LAMBDA_KEY }} s3://${{ env.AWS_DEV_LAMBDA_BUCKET_NAME }}/${{ env.LAMBDA_KEY }}
