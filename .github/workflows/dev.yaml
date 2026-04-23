@@ -37,7 +37,7 @@ jobs:
 
       - name: Bundle Lambda Function
         run: |
-          cp src/lambda_function.py package/
+          cp src/* package/
           cd package
           zip -r ../${{ env.LAMBDA_KEY }} .
 
