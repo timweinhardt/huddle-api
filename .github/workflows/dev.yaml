@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  LAMBDA_KEY: lambda_package-${{ github.sha }}.zip
+  LAMBDA_KEY: lambda_package.zip
 
 jobs:
   build:
