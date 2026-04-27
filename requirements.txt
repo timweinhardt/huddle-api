@@ -1,2 +1,5 @@
 fastapi
 mangum
+dotenv
+pydantic_settings
+uvicorn[standard]
