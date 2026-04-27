@@ -39,7 +39,7 @@ jobs:
 
       - name: Bundle Lambda Function
         run: |
-          cp app/* package/
+          cp -r app/. package/
           cd package
           zip -r ../${{ env.LAMBDA_KEY }} .
 
