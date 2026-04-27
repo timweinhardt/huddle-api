@@ -20,7 +20,7 @@ Resources:
     Properties:
       FunctionName: !Sub "${Environment}-huddle-api"
       Runtime: python3.11
-      Handler: main.handler
+      Handler: app.main.handler
       Code:
         S3Bucket: !Ref LambdaS3Bucket
         S3Key: !Ref LambdaS3Key
