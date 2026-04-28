@@ -143,7 +143,3 @@ Resources:
         - given_name
         - family_name
         - birthdate
-      WriteAttributes:
-        - given_name
-        - family_name
-        - birthdate
