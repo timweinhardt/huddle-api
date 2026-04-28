@@ -72,6 +72,8 @@ jobs:
             --parameter-overrides \
               LambdaS3Bucket=${{ vars.AWS_LAMBDA_BUCKET_NAME }} \
               LambdaS3Key=${{ env.LAMBDA_KEY }} \
+              AWSRegion=${{ vars.AWS_REGION }} \
+              CognitoUserPoolID=${{ vars.AWS_COGNITO_USER_POOL_ID }} \
               Environment="dev" \
             --capabilities CAPABILITY_NAMED_IAM
 

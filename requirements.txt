@@ -3,3 +3,5 @@ mangum
 dotenv
 pydantic_settings
 uvicorn[standard]
+requests
+python-jose[cryptography]
