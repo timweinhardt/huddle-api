@@ -37,7 +37,6 @@ Resources:
       Role: !GetAtt LambdaExecutionRole.Arn
       Environment:
         Variables:
-          AWS_REGION: !Ref AWSRegion
           COGNITO_USER_POOL_ID: !Ref CognitoUserPoolID
 
   LambdaExecutionRole:
