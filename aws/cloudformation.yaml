@@ -37,7 +37,7 @@ Resources:
       Role: !GetAtt LambdaExecutionRole.Arn
       Environment:
         Variables:
-          COGNITO_REGION: !Ref AWSRegion
+          AWS_REGION: !Ref AWSRegion
           COGNITO_USER_POOL_ID: !Ref CognitoUserPoolID
 
   LambdaExecutionRole:
@@ -62,6 +62,21 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: arn:aws:logs:*:*:*
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt PostsTable.Arn
+                  - !Sub "${PostsTable.Arn}/index/*"
 
   ApiGateway:
     Type: AWS::ApiGateway::RestApi
@@ -151,3 +166,31 @@ Resources:
         - given_name
         - family_name
         - birthdate
+
+  #
+  # Database Resources
+  #
+  PostsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${Environment}-huddle-posts"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: location_id
+          AttributeType: S
+        - AttributeName: created_at
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: location-created_at-index
+          KeySchema:
+            - AttributeName: location_id
+              KeyType: HASH
+            - AttributeName: created_at
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL

@@ -6,13 +6,18 @@ load_dotenv()
 
 class Config(BaseSettings):
     app_name: str = "Huddle"
-    debug: bool = False
-    cognito_region: str = os.getenv("COGNITO_REGION")
+    environment: str = os.getenv("ENVIRONMENT", "dev")
+    aws_region: str = os.getenv("AWS_REGION", "us-east-2")
     cognito_user_pool_id: str = os.getenv("COGNITO_USER_POOL_ID")
 
     @property
     def jwks_uri(self):
-        return f"https://cognito-idp.{self.cognito_region}.amazonaws.com/{self.cognito_user_pool_id}/.well-known/jwks.json"
+        return f"https://cognito-idp.{self.aws_region}.amazonaws.com/{self.cognito_user_pool_id}/.well-known/jwks.json"
+    
+    # Database Configuration
+    @property
+    def posts_table_name(self):
+        return f"{self.environment}-huddle-posts"
 
 
 config = Config()

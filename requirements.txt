@@ -5,3 +5,4 @@ pydantic_settings
 uvicorn[standard]
 requests
 python-jose[cryptography]
+boto3
