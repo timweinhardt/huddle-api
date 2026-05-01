@@ -1,0 +1,23 @@
+roles:
+  TEAM_MEMBER:
+    - post:read
+  TEAM_LEADER:
+    - post:read
+  DIRECTOR:
+    - post:read
+    - post:write
+    - post:update:own
+    - post:delete:own
+  OPERATOR:
+    - post:read
+    - post:write
+    - post:update:own
+    - post:delete:own
+    - post:delete:any
+  ADMIN:
+    - post:read
+    - post:write
+    - post:update:own
+    - post:update:any
+    - post:delete:own
+    - post:delete:any
