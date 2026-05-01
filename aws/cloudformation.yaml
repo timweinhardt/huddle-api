@@ -74,8 +74,8 @@ Resources:
                   - dynamodb:Query
                   - dynamodb:Scan
                 Resource:
-                  - !GetAtt PostsTable.Arn
-                  - !Sub "${PostsTable.Arn}/index/*"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Environment}-huddle-*"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Environment}-huddle-*/index/*"
 
   ApiGateway:
     Type: AWS::ApiGateway::RestApi
