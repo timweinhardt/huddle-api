@@ -12,7 +12,6 @@ roles:
     - post:read
     - post:write
     - post:update:own
-    - post:delete:own
     - post:delete:any
   ADMIN:
     - post:read

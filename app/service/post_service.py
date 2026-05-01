@@ -120,12 +120,13 @@ class PostService:
         except NotFoundError:
             raise PermissionDeniedError("Insufficient permissions for this location")
         
-        if item.get("author_id") == context.user_id:   
+        is_owner = item.get("author_id") == context.user_id
+        if is_owner:  
             if not user_has_permission(membership.roles, "post:update:own"):
                 raise PermissionDeniedError("Insufficient permissions to edit this post")
-
-        if not user_has_permission(membership.roles, "post:update:any"):
-            raise PermissionDeniedError("Insufficient permissions to edit this post")   
+        else:
+            if not user_has_permission(membership.roles, "post:update:any"):
+                raise PermissionDeniedError("Insufficient permissions to edit this post")   
         
         # Return early if no attributes are provided
         if all(value is None for value in kwargs.values()):
@@ -170,12 +171,13 @@ class PostService:
         except NotFoundError:
             raise PermissionDeniedError("Insufficient permissions for this location")
         
-        if item.get("author_id") == context.user_id:   
-            if not user_has_permission(membership.roles, "post:update:own"):
-                raise PermissionDeniedError("Insufficient permissions to edit this post")
-            
-        if not user_has_permission(membership.roles, "post:update:any"):
-            raise PermissionDeniedError("Insufficient permissions to edit this post")
+        is_owner = item.get("author_id") == context.user_id
+        if is_owner:
+            if not user_has_permission(membership.roles, "post:delete:own"):
+                raise PermissionDeniedError("Insufficient permissions to delete this post")
+        else:   
+            if not user_has_permission(membership.roles, "post:delete:any"):
+                raise PermissionDeniedError("Insufficient permissions to delete this post")
 
         update_expression = "SET #deleted_at = :deleted_at"
         names = {'#deleted_at': 'deleted_at'}
