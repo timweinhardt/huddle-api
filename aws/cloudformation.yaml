@@ -169,6 +169,36 @@ Resources:
   #
   # Database Resources
   #
+  MembershipsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${Environment}-huddle-memberships"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: user_key
+          AttributeType: S
+        - AttributeName: location_key
+          AttributeType: S
+        - AttributeName: location_index_key
+          AttributeType: S
+        - AttributeName: user_index_key
+          AttributeType: S
+      KeySchema:
+        - AttributeName: user_key
+          KeyType: HASH
+        - AttributeName: location_key
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: location_membership_index
+          KeySchema:
+            - AttributeName: location_index_key
+              KeyType: HASH
+            - AttributeName: user_index_key
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      SSESpecification:
+        SSEEnabled: true
   PostsTable:
     Type: AWS::DynamoDB::Table
     Properties:
