@@ -111,14 +111,10 @@ class PostService:
         names = {'#deleted_at': 'deleted_at'}
         values = {':deleted_at': get_current_time()}
 
-        # Prevent creation if the item doesn't exist
-        condition_expression = "attribute_exists(id)" 
-
         updated_item = self.db.update_item(
             key=key,
             update_expression=update_expression,
             attr_names=names,
             attr_values=values,
-            condition_expression=condition_expression
         )
         return Post.model_validate(updated_item)

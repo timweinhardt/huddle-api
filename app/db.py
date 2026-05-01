@@ -59,13 +59,13 @@ class Table:
             raise DatabaseError(f"AWS error: {str(err)}")
         return response.get("Items", {})
     
-    def update_item(self, key={}, update_expression="", attr_names={}, attr_values={}, condition_expression=""):
+    def update_item(self, key={}, update_expression="", attr_names={}, attr_values={}):
         resp = self.table.update_item(
             Key=key,
             UpdateExpression=update_expression,
             ExpressionAttributeNames=attr_names,
             ExpressionAttributeValues=attr_values,
-            ConditionExpression=condition_expression,
             ReturnValues="ALL_NEW",
         )
+
         return resp.get("Attributes", {})
