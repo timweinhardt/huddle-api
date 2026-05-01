@@ -23,9 +23,6 @@ class CreatePostResp(Post):
 class GetPostByIdResp(Post):
     pass
 
-class GetPostsByLocationIdReq(BaseModel):
-    location_id: str
-
 class GetPostsByLocationIdResp(BaseModel):
     posts: List[Post]
 

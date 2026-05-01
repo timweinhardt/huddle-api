@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.core.auth import UserClaims, validate_token
 from app.core.exceptions import DatabaseError, NotFoundError
-from app.model.post_model import CreatePostReq, CreatePostResp, DeletePostResp, GetPostsByLocationIdReq, GetPostsByLocationIdResp, GetPostByIdResp, UpdatePostReq, UpdatePostResp
+from app.model.post_model import CreatePostReq, CreatePostResp, DeletePostResp, GetPostsByLocationIdResp, GetPostByIdResp, UpdatePostReq, UpdatePostResp
 from app.service.post_service import PostService
 
 router = APIRouter()
@@ -40,13 +40,13 @@ def get_post_by_id(
 
 @router.get("/posts", response_model=GetPostsByLocationIdResp)
 def get_posts_by_location_id(
-    req: GetPostsByLocationIdReq,
+    location_id: str,
     include_deleted: bool = False,
     user: UserClaims = Depends(validate_token),
     post_service: PostService = Depends()
 ) -> GetPostsByLocationIdResp:
     try:
-        posts = post_service.get_posts_by_location_id(req.location_id, include_deleted=include_deleted)
+        posts = post_service.get_posts_by_location_id(location_id, include_deleted=include_deleted)
     except DatabaseError as err:
         raise HTTPException(status_code=503, detail=str(err))
     return GetPostsByLocationIdResp(posts=posts)
