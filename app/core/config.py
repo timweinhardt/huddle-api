@@ -18,6 +18,10 @@ class Config(BaseSettings):
     @property
     def posts_table_name(self):
         return f"{self.environment}-huddle-posts"
+    
+    @property
+    def memberships_table_name(self):
+        return f"{self.environment}-huddle-memberships"
 
 
 config = Config()

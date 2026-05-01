@@ -1,9 +1,9 @@
-from dataclasses import asdict
-
 from app.core.config import config
-from app.core.exceptions import NotFoundError
+from app.core.context import Context
+from app.core.exceptions import NotFoundError, PermissionDeniedError
 from app.db import Table
 from app.model.post_model import Post
+from app.service.membership_service import MembershipService
 from app.utils.ids import generate_uuid
 from app.utils.time import get_current_time
 from boto3.dynamodb.conditions import Key
@@ -11,6 +11,7 @@ from boto3.dynamodb.conditions import Key
 class PostService:
     def __init__(self):
         self.db = Table(table_name=config.posts_table_name, aws_region=config.aws_region)
+        self.membership_service = MembershipService()
 
     def _build_post(self, **kwargs) -> Post:
         current_time = get_current_time()
@@ -31,13 +32,17 @@ class PostService:
 
     def create_post(
         self,
-        author_id: str,
+        context: Context,
         location_id: str,
         title: str,
         content: str
     ) -> Post:
+        is_member = self.membership_service.is_member(context.user_id, location_id)
+        if not is_member:
+            raise PermissionDeniedError("Insufficient permissions for this location")
+        
         post = self._build_post(
-            author_id=author_id,
+            author_id=context.user_id,
             location_id=location_id,
             title=title,
             content=content
@@ -46,16 +51,34 @@ class PostService:
         self.db.put_item(item=item)
         return post
     
-    def get_post_by_id(self, id: str, include_deleted: bool = False) -> Post | None:
+    def get_post_by_id(
+            self,
+            context: Context,
+            id: str,
+            include_deleted: bool = False
+        ) -> Post | None:
         key = {"id": id}
         item = self.db.get_item(key)
         if not item:
             raise NotFoundError("Post not found")
-        if not include_deleted and item.get("deleted_at"):
+        if item.get("deleted_at") and not include_deleted:
             raise NotFoundError("Post not found")
+        
+        is_member = self.membership_service.is_member(context.user_id, item.get("location_id"))
+        if not is_member:
+            raise PermissionDeniedError("Insufficient permissions for this location")
         return Post.model_validate(item)
     
-    def get_posts_by_location_id(self, location_id: str, include_deleted: bool = False) -> Post | None:
+    def get_posts_by_location_id(
+            self,
+            context: Context,
+            location_id: str,
+            include_deleted: bool = False
+        ) -> Post | None:
+        is_member = self.membership_service.is_member(context.user_id, location_id)
+        if not is_member:
+            raise PermissionDeniedError("Insufficient permissions for this location")
+        
         key_expression = Key("location_id").eq(location_id)
         items = self.db.query_gsi(
             index_name="location-created_at-index",
@@ -65,13 +88,22 @@ class PostService:
             items = [item for item in items if not item.get("deleted_at")]
         return items
     
-    def update_post(self, id: str, **kwargs) -> Post | None:
+    def update_post(
+            self,
+            context: Context,
+            id: str,
+            **kwargs
+        ) -> Post | None:
         key = {"id": id}
         item = self.db.get_item(key)
 
         # Verify item exists
         if not item:
             raise NotFoundError("Post not found")
+        
+        is_member = self.membership_service.is_member(context.user_id, item.get("location_id"))
+        if not is_member:
+            raise PermissionDeniedError("Insufficient permissions for this location")
         
         # Return early if no attributes are provided
         if all(value is None for value in kwargs.values()):
@@ -99,13 +131,21 @@ class PostService:
         )
         return Post.model_validate(updated_item)
     
-    def delete_post(self, id: str):
+    def delete_post(
+            self,
+            context: Context,
+            id: str
+        ):
         key = {"id": id}
 
         item = self.db.get_item(key)
         # Verify item exists and is not already deleted
         if not item or item.get("deleted_at"):
             raise NotFoundError("Post not found")
+        
+        is_member = self.membership_service.is_member(context.user_id, item.get("location_id"))
+        if not is_member:
+            raise PermissionDeniedError("Insufficient permissions for this location")
 
         update_expression = "SET #deleted_at = :deleted_at"
         names = {'#deleted_at': 'deleted_at'}

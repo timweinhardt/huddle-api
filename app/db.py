@@ -40,6 +40,23 @@ class Table:
         except BotoCoreError as err:
             raise DatabaseError(f"AWS error: {str(err)}")
         return response
+    
+    def query(self, key_expression, filter_expression=None):
+        try:
+            if filter_expression:
+                response = self.table.query(
+                    KeyConditionExpression=key_expression,
+                    FilterExpression=filter_expression,
+                )
+                return response.get("Items")
+            response = self.table.query(
+                KeyConditionExpression=key_expression,
+            )
+        except ClientError as err:
+            raise DatabaseError(f"DynamoDB client error: {str(err)}")
+        except BotoCoreError as err:
+            raise DatabaseError(f"AWS error: {str(err)}")
+        return response.get("Items", {})
 
     def query_gsi(self, index_name, key_expression, filter_expression=None):
         try:
@@ -67,5 +84,15 @@ class Table:
             ExpressionAttributeValues=attr_values,
             ReturnValues="ALL_NEW",
         )
-
         return resp.get("Attributes", {})
+    
+    def delete_item(self, key: dict) -> dict:
+        try:
+            resp = self.table.delete_item(
+                Key=key
+            )
+        except ClientError as err:
+            raise DatabaseError(f"DynamoDB client error: {str(err)}")
+        except BotoCoreError as err:
+            raise DatabaseError(f"AWS error: {str(err)}")
+        return resp
