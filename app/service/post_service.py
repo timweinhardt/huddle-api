@@ -30,6 +30,34 @@ class PostService:
     def _serialize_post(self, post: Post) -> dict:
         item = post.model_dump()
         return item
+    
+    def _validate_permissions(
+            self,
+            user_id: str,
+            location_id: str,
+            permission_string: str,
+            is_owner: bool = False
+        ) -> None:
+        # Verify permissions at the location level
+        try:
+            membership = self.membership_service.get_membership(user_id=user_id, location_id=location_id)
+        except NotFoundError:
+            raise PermissionDeniedError("Insufficient permissions for this location")
+        
+        # Verify permissions at the role level
+        if is_owner:
+            if not user_has_permission(membership.roles, {
+                permission_string,
+                f"{permission_string}:own",
+                f"{permission_string}:any"
+            }, require_all=False):
+                raise PermissionDeniedError("Insufficient permissions for this role")
+        else:
+            if not user_has_permission(membership.roles, {
+                permission_string,
+                f"{permission_string}:any"
+            }, require_all=False):
+                raise PermissionDeniedError("Insufficient permissions for this role")
 
     def create_post(
         self,
@@ -38,13 +66,7 @@ class PostService:
         title: str,
         content: str
     ) -> Post:
-        try:
-            membership = self.membership_service.get_membership(context.user_id, location_id)
-        except NotFoundError:
-            raise PermissionDeniedError("Insufficient permissions for this location")
-        
-        if not user_has_permission(membership.roles, "post:write"):
-            raise PermissionDeniedError("Insufficient permissions to create this post")
+        self._validate_permissions(context.user_id, location_id, "post:write")
         
         post = self._build_post(
             author_id=context.user_id,
@@ -69,13 +91,7 @@ class PostService:
         if item.get("deleted_at") and not include_deleted:
             raise NotFoundError("Post not found")
 
-        try:
-            membership = self.membership_service.get_membership(context.user_id, item.get("location_id"))
-        except NotFoundError:
-            raise PermissionDeniedError("Insufficient permissions for this location")
-        
-        if not user_has_permission(membership.roles, "post:read"):
-            raise PermissionDeniedError("Insufficient permissions to read this post")
+        self._validate_permissions(context.user_id, item.get("location_id"), "post:read")
         
         return Post.model_validate(item)
     
@@ -85,13 +101,7 @@ class PostService:
             location_id: str,
             include_deleted: bool = False
         ) -> Post | None:
-        try:
-            membership = self.membership_service.get_membership(context.user_id, location_id)
-        except NotFoundError:
-            raise PermissionDeniedError("Insufficient permissions for this location")
-        
-        if not user_has_permission(membership.roles, "post:read"):
-            raise PermissionDeniedError("Insufficient permissions to read posts")
+        self._validate_permissions(context.user_id, location_id, "post:read")
         
         key_expression = Key("location_id").eq(location_id)
         items = self.db.query_gsi(
@@ -115,18 +125,8 @@ class PostService:
         if not item:
             raise NotFoundError("Post not found")
         
-        try:
-            membership = self.membership_service.get_membership(context.user_id, item.get("location_id"))
-        except NotFoundError:
-            raise PermissionDeniedError("Insufficient permissions for this location")
-        
         is_owner = item.get("author_id") == context.user_id
-        if is_owner:  
-            if not user_has_permission(membership.roles, "post:update:own"):
-                raise PermissionDeniedError("Insufficient permissions to edit this post")
-        else:
-            if not user_has_permission(membership.roles, "post:update:any"):
-                raise PermissionDeniedError("Insufficient permissions to edit this post")   
+        self._validate_permissions(context.user_id, item.get("location_id"), "post:update", is_owner) 
         
         # Return early if no attributes are provided
         if all(value is None for value in kwargs.values()):
@@ -166,18 +166,8 @@ class PostService:
         if not item or item.get("deleted_at"):
             raise NotFoundError("Post not found")
         
-        try:
-            membership = self.membership_service.get_membership(context.user_id, item.get("location_id"))
-        except NotFoundError:
-            raise PermissionDeniedError("Insufficient permissions for this location")
-        
         is_owner = item.get("author_id") == context.user_id
-        if is_owner:
-            if not user_has_permission(membership.roles, "post:delete:own"):
-                raise PermissionDeniedError("Insufficient permissions to delete this post")
-        else:   
-            if not user_has_permission(membership.roles, "post:delete:any"):
-                raise PermissionDeniedError("Insufficient permissions to delete this post")
+        self._validate_permissions(context.user_id, item.get("location_id"), "post:delete", is_owner) 
 
         update_expression = "SET #deleted_at = :deleted_at"
         names = {'#deleted_at': 'deleted_at'}
