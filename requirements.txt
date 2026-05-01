@@ -6,3 +6,6 @@ uvicorn[standard]
 requests
 python-jose[cryptography]
 boto3
+botocore[crt]
+httpx
+pylint
