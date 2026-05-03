@@ -1,7 +1,7 @@
 from app.core.config import config
 from app.core.context import Context
 from app.core.exceptions import NotFoundError, PermissionDeniedError
-from app.core.permissions import user_has_permission
+from app.core.permissions import user_has_permission, validate_permissions
 from app.db import Table
 from app.model.post_model import Post
 from app.service.membership_service import MembershipService
@@ -30,34 +30,6 @@ class PostService:
     def _serialize_post(self, post: Post) -> dict:
         item = post.model_dump()
         return item
-    
-    def _validate_permissions(
-            self,
-            user_id: str,
-            location_id: str,
-            permission_string: str,
-            is_owner: bool = False
-        ) -> None:
-        # Verify permissions at the location level
-        try:
-            membership = self.membership_service.get_membership(user_id=user_id, location_id=location_id)
-        except NotFoundError:
-            raise PermissionDeniedError("Insufficient permissions for this location")
-        
-        # Verify permissions at the role level
-        if is_owner:
-            if not user_has_permission(membership.roles, {
-                permission_string,
-                f"{permission_string}:own",
-                f"{permission_string}:any"
-            }, require_all=False):
-                raise PermissionDeniedError("Insufficient permissions for this role")
-        else:
-            if not user_has_permission(membership.roles, {
-                permission_string,
-                f"{permission_string}:any"
-            }, require_all=False):
-                raise PermissionDeniedError("Insufficient permissions for this role")
 
     def create_post(
         self,
@@ -66,7 +38,7 @@ class PostService:
         title: str,
         content: str
     ) -> Post:
-        self._validate_permissions(context.user_id, location_id, "post:write")
+        validate_permissions(context.user_id, location_id, "post:create")
         
         post = self._build_post(
             author_id=context.user_id,
@@ -91,7 +63,7 @@ class PostService:
         if item.get("deleted_at") and not include_deleted:
             raise NotFoundError("Post not found")
 
-        self._validate_permissions(context.user_id, item.get("location_id"), "post:read")
+        validate_permissions(context.user_id, item.get("location_id"), "post:read")
         
         return Post.model_validate(item)
     
@@ -101,7 +73,7 @@ class PostService:
             location_id: str,
             include_deleted: bool = False
         ) -> Post | None:
-        self._validate_permissions(context.user_id, location_id, "post:read")
+        validate_permissions(context.user_id, location_id, "post:read")
         
         key_expression = Key("location_id").eq(location_id)
         items = self.db.query_gsi(
@@ -126,7 +98,7 @@ class PostService:
             raise NotFoundError("Post not found")
         
         is_owner = item.get("author_id") == context.user_id
-        self._validate_permissions(context.user_id, item.get("location_id"), "post:update", is_owner) 
+        validate_permissions(context.user_id, item.get("location_id"), "post:update", is_owner) 
         
         # Return early if no attributes are provided
         if all(value is None for value in kwargs.values()):
@@ -167,7 +139,7 @@ class PostService:
             raise NotFoundError("Post not found")
         
         is_owner = item.get("author_id") == context.user_id
-        self._validate_permissions(context.user_id, item.get("location_id"), "post:delete", is_owner) 
+        validate_permissions(context.user_id, item.get("location_id"), "post:delete", is_owner) 
 
         update_expression = "SET #deleted_at = :deleted_at"
         names = {'#deleted_at': 'deleted_at'}

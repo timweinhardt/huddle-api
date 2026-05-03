@@ -4,18 +4,20 @@ roles:
   TEAM_LEADER:
     - post:read
   DIRECTOR:
+    - user:create
     - post:read
-    - post:write
+    - post:create
     - post:update:own
     - post:delete:own
   OPERATOR:
+    - user:create
     - post:read
-    - post:write
+    - post:create
     - post:update:own
     - post:delete:any
   ADMIN:
     - post:read
-    - post:write
+    - post:create
     - post:update:own
     - post:update:any
     - post:delete:own

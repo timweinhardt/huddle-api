@@ -76,6 +76,19 @@ Resources:
                 Resource:
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Environment}-huddle-*"
                   - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Environment}-huddle-*/index/*"
+        - PolicyName: CognitoAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:AdminCreateUser
+                  - cognito-idp:AdminDeleteUser
+                  - cognito-idp:AdminGetUser
+                  - cognito-idp:AdminUpdateUserAttributes
+                  - cognito-idp:AdminDisableUser
+                  - cognito-idp:AdminEnableUser
+                Resource: !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolID}"
 
   ApiGateway:
     Type: AWS::ApiGateway::RestApi
@@ -127,6 +140,15 @@ Resources:
       UserPoolName: !Sub "${Environment}-huddle-user-pool"
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: true
+        InviteMessageTemplate:
+          EmailSubject: "Welcome to Huddle"
+          EmailMessage: |
+            <html>
+              <body>
+                <p>Your username is <b>{username}</b></p>
+                <p>Your temporary password is <b>{####}</b></p>
+              </body>
+            </html>
       UsernameAttributes:
         - email
       AutoVerifiedAttributes:
