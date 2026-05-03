@@ -8,3 +8,5 @@ python-jose[cryptography]
 boto3
 botocore[crt]
 httpx
+pylint
+black
