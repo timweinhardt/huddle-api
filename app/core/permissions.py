@@ -5,7 +5,7 @@ from app.service.membership_service import MembershipService
 
 
 def load_permissions():
-    with open("roles.yaml", "r", encoding="utf-8") as f:
+    with open("app/roles.yaml", "r", encoding="utf-8") as f:
         return yaml.safe_load(f).get("roles", {})
 
 
