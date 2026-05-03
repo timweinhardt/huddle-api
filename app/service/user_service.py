@@ -1,8 +1,8 @@
+import logging
 from datetime import datetime
 from typing import List
 
 from app.auth_client import AuthClient
-from app.core import logging
 from app.core.config import config
 from app.core.context import Context
 from app.core.exceptions import UserCreationError
