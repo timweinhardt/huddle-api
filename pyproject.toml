@@ -1,0 +1,22 @@
+[tool.pylint.messages_control]
+disable = [
+    "C0114",
+    "C0115",
+    "C0116",
+    "C0301",
+    "R0801",
+    "R0903",
+    "R0913",
+    "R0914",
+    "R0917",
+    "W0212",
+    "E1101",
+    "W0511",
+    "W0718",
+]
+
+[tool.pylint.format]
+max-line-length = 120
+
+[tool.pylint.main]
+init-hook='import sys; sys.path.insert(0, ".")'

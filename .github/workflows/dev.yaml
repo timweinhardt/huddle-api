@@ -11,6 +11,28 @@ env:
   LAMBDA_NAME: dev-huddle-api
 
 jobs:
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dev Dependencies
+        run: pip install pylint black
+
+      - name: Run Black
+        run: black --check app
+
+      - name: Run Pylint
+        run: python -m pylint app
+
   build:
     name: Build
     runs-on: ubuntu-latest

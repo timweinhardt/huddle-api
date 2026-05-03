@@ -12,6 +12,7 @@ from app.model.user_model import User
 from app.service.membership_service import MembershipService
 from app.utils.time import get_current_time
 
+
 class UserService:
     def __init__(self):
         self.auth_client = AuthClient(config.aws_region)
@@ -27,19 +28,33 @@ class UserService:
             memberships=kwargs["memberships"],
             created_at=kwargs.get("created_at", current_time),
             updated_at=kwargs.get("updated_at", current_time),
-            deleted_at=kwargs.get("deleted_at", None)
+            deleted_at=kwargs.get("deleted_at", None),
         )
-    
-    def _rollback_user_creation(self, user_id: str, email: str, memberships: List[UserMembership]):
+
+    def _rollback_user_creation(
+        self, user_id: str, email: str, memberships: List[UserMembership]
+    ):
         for membership in memberships:
             try:
-                self.membership_service.delete_membership(user_id, membership.location_id)
+                self.membership_service.delete_membership(
+                    user_id, membership.location_id
+                )
             except Exception as e:
-                logging.error("Failed to delete membership during rollback", extra={"user_id": user_id, "location_id": membership.location_id, "error": str(e)})
+                logging.error(
+                    "Failed to delete membership during rollback",
+                    extra={
+                        "user_id": user_id,
+                        "location_id": membership.location_id,
+                        "error": str(e),
+                    },
+                )
         try:
             self.auth_client.admin_delete_user(email)
         except Exception as e:
-            logging.error("Failed to delete user during rollback", extra={"user_id": user_id, "error": str(e)})
+            logging.error(
+                "Failed to delete user during rollback",
+                extra={"user_id": user_id, "error": str(e)},
+            )
 
     def create_user(
         self,
@@ -47,12 +62,12 @@ class UserService:
         email: str,
         first_name: str,
         last_name: str,
-        memberships: List[UserMembership]
+        memberships: List[UserMembership],
     ) -> User:
         # Verify that caller is allowed to create users for the requested locations
         for membership in memberships:
             validate_permissions(context.user_id, membership.location_id, "user:create")
-        
+
         # Register user via auth client
         user_attributes = [
             {"Name": "email", "Value": email},
@@ -60,8 +75,7 @@ class UserService:
             {"Name": "family_name", "Value": last_name},
         ]
         resp = self.auth_client.admin_create_user(
-            username=email,
-            user_attributes=user_attributes
+            username=email, user_attributes=user_attributes
         )
 
         created_user_id = resp.get("Username")
@@ -77,17 +91,22 @@ class UserService:
                 new_membership = self.membership_service.create_membership(
                     user_id=created_user_id,
                     location_id=membership.location_id,
-                    roles=membership.roles
+                    roles=membership.roles,
                 )
                 created_user_memberships.append(
                     UserMembership(
                         location_id=new_membership.location_id,
-                        roles=new_membership.roles
-                    ))
+                        roles=new_membership.roles,
+                    )
+                )
         except Exception as err:
-            self._rollback_user_creation(user_id=created_user_id, email=email, memberships=created_user_memberships)
+            self._rollback_user_creation(
+                user_id=created_user_id,
+                email=email,
+                memberships=created_user_memberships,
+            )
             raise UserCreationError("Failed to assign memberships to user") from err
-            
+
         user = self._build_user(
             id=created_user_id,
             email=email,
@@ -95,6 +114,6 @@ class UserService:
             last_name=last_name,
             memberships=created_user_memberships,
             created_at=created_at_time.isoformat(),
-            updated_at=modified_at_time.isoformat()
+            updated_at=modified_at_time.isoformat(),
         )
         return user

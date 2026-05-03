@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings
 
 load_dotenv()
 
+
 class Config(BaseSettings):
     app_name: str = "Huddle"
     environment: str = os.getenv("ENVIRONMENT", "dev")
@@ -13,12 +14,12 @@ class Config(BaseSettings):
     @property
     def jwks_uri(self):
         return f"https://cognito-idp.{self.aws_region}.amazonaws.com/{self.cognito_user_pool_id}/.well-known/jwks.json"
-    
+
     # Database Configuration
     @property
     def posts_table_name(self):
         return f"{self.environment}-huddle-posts"
-    
+
     @property
     def memberships_table_name(self):
         return f"{self.environment}-huddle-memberships"

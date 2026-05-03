@@ -1,5 +1,6 @@
-import requests
+import functools
 from typing import Annotated
+import requests
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jws, jwt, ExpiredSignatureError, JWTError, JWSError
@@ -10,23 +11,31 @@ from app.core.config import config
 
 security = HTTPBearer()
 
+
 class UserClaims(BaseModel):
     sub: str
 
+
+@functools.lru_cache(maxsize=1)
+def _fetch_jwks():
+    return requests.get(config.jwks_uri, timeout=5).json()["keys"]
+
+
 def find_public_key(kid: str):
-    jwks = requests.get(config.jwks_uri).json()["keys"]
-    for key in jwks:
+    for key in _fetch_jwks():
         if key["kid"] == kid:
             return key
-        
-def validate_token(credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)]):
+    return None
+
+
+def validate_token(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+):
     try:
         unverified_header = jws.get_unverified_header(credentials.credentials)
         public_key = find_public_key(unverified_header["kid"])
         token_payload = jwt.decode(
-            token=credentials.credentials,
-            key=public_key,
-            algorithms="RS256"
+            token=credentials.credentials, key=public_key, algorithms="RS256"
         )
         return UserClaims(sub=token_payload["sub"])
 
@@ -36,5 +45,5 @@ def validate_token(credentials: Annotated[HTTPAuthorizationCredentials, Depends(
         JWTClaimsError,
         JWSError,
         JWKError,
-    ) as error:
-        raise HTTPException(status_code=401, detail=str(error))
+    ) as err:
+        raise HTTPException(status_code=401, detail=str(err)) from err
