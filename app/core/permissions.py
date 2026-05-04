@@ -12,20 +12,43 @@ def load_permissions():
 role_permissions = load_permissions()
 
 
+def parse_permission_string(permission: str):
+    permission_parts = permission.split(":")
+    resource = permission_parts[0]
+    action = None
+    scope = "any"
+
+    if len(permission_parts) > 1:
+        action = permission_parts[1]
+    if len(permission_parts) > 2:
+        scope = permission_parts[2]
+
+    return resource, action, scope
+
+
 def user_has_permission(
-    user_roles: set[str], required_permissions: set[str], require_all: bool = False
+    user_roles: set[str],
+    required_permission: str,
+    is_owner: bool = False,
 ) -> bool:
     """
-    Check permissions for a user.
+    Check if a user has a required permission.
     """
+    required_resource, required_action, _ = parse_permission_string(required_permission)
 
-    user_permissions = set()
     for role in user_roles:
-        user_permissions.update(role_permissions.get(role, []))
+        permissions = role_permissions.get(role, [])
 
-    if require_all:
-        return required_permissions.issubset(user_permissions)
-    return bool(user_permissions & required_permissions)
+        for permission in permissions:
+            resource, action, scope = parse_permission_string(permission)
+
+            if resource == required_resource and action == required_action:
+                if scope == "any":
+                    return True
+
+                if scope == "own" and is_owner:
+                    return True
+    return False
 
 
 def validate_permissions(
@@ -42,17 +65,11 @@ def validate_permissions(
         ) from err
 
     # Verify permissions at the role level
-    if is_owner:
-        if not user_has_permission(
-            membership.roles,
-            {permission_string, f"{permission_string}:own", f"{permission_string}:any"},
-            require_all=False,
-        ):
-            raise PermissionDeniedError("Insufficient permissions for this role")
-    else:
-        if not user_has_permission(
-            membership.roles,
-            {permission_string, f"{permission_string}:any"},
-            require_all=False,
-        ):
-            raise PermissionDeniedError("Insufficient permissions for this role")
+    if not user_has_permission(
+        user_roles=membership.roles,
+        required_permission=permission_string,
+        is_owner=is_owner,
+    ):
+        raise PermissionDeniedError(
+            f"Insufficient permissions for this role, missing {permission_string}"
+        )
