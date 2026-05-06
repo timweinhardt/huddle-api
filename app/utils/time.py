@@ -1,5 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 def get_current_time() -> str:
-    return datetime.now().isoformat()
+    return datetime.now(timezone.utc).isoformat()
