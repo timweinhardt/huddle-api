@@ -44,3 +44,27 @@ class AuthClient:
         except BotoCoreError as err:
             raise AuthClientError(f"AWS error: {str(err)}") from err
         return resp
+
+    def list_users(self):
+        users = []
+        pagination_token = None
+
+        while True:
+            kwargs = {"UserPoolId": self.user_pool_id}
+            if pagination_token:
+                kwargs["PaginationToken"] = pagination_token
+
+            try:
+                response = self.client.list_users(**kwargs)
+            except ClientError as err:
+                raise AuthClientError(f"Cognito client error: {str(err)}") from err
+            except BotoCoreError as err:
+                raise AuthClientError(f"AWS error: {str(err)}") from err
+
+            users.extend(response["Users"])
+
+            pagination_token = response.get("PaginationToken")
+            if not pagination_token:
+                break
+
+        return users

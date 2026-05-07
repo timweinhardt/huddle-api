@@ -1,8 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.context import Context, get_context
-from app.core.exceptions import AlreadyExistsError, DatabaseError, PermissionDeniedError
-from app.model.user_model import CreateUserReq, CreateUserResp
+from app.core.exceptions import (
+    AlreadyExistsError,
+    AuthClientError,
+    DatabaseError,
+    PermissionDeniedError,
+)
+from app.model.user_model import CreateUserReq, CreateUserResp, GetLocationUsersResp
 from app.service.user_service import UserService
 
 router = APIRouter()
@@ -24,8 +29,30 @@ def create_user(
         )
     except DatabaseError as err:
         raise HTTPException(status_code=503, detail=str(err)) from err
+    except AuthClientError as err:
+        raise HTTPException(status_code=503, detail=str(err)) from err
     except PermissionDeniedError as err:
         raise HTTPException(status_code=403, detail=str(err)) from err
     except AlreadyExistsError as err:
         raise HTTPException(status_code=409, detail=str(err)) from err
     return user
+
+
+@router.get("/locations/{location_id}/users", response_model=GetLocationUsersResp)
+def get_location_users(
+    location_id: str,
+    ctx: Context = Depends(get_context),
+    user_service: UserService = Depends(),
+) -> GetLocationUsersResp:
+    try:
+        users = user_service.get_location_users(
+            context=ctx,
+            location_id=location_id,
+        )
+    except DatabaseError as err:
+        raise HTTPException(status_code=503, detail=str(err)) from err
+    except AuthClientError as err:
+        raise HTTPException(status_code=503, detail=str(err)) from err
+    except PermissionDeniedError as err:
+        raise HTTPException(status_code=403, detail=str(err)) from err
+    return GetLocationUsersResp(location_id=location_id, users=users)

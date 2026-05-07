@@ -1,6 +1,6 @@
-import logging
 from datetime import datetime
-from typing import List
+import logging
+from typing import List, Optional
 
 from app.auth_client import AuthClient
 from app.core.config import config
@@ -10,7 +10,7 @@ from app.core.permissions import validate_permissions
 from app.model.membership_model import UserMembership
 from app.model.user_model import User
 from app.service.membership_service import MembershipService
-from app.utils.time import get_current_time
+from app.utils.time import get_current_time, serialize_time
 
 
 class UserService:
@@ -18,7 +18,8 @@ class UserService:
         self.auth_client = AuthClient(config.aws_region)
         self.membership_service = MembershipService()
 
-    def _build_user(self, **kwargs):
+    @staticmethod
+    def _build_user(**kwargs):
         current_time = get_current_time()
         return User(
             id=kwargs["id"],
@@ -28,7 +29,7 @@ class UserService:
             memberships=kwargs["memberships"],
             created_at=kwargs.get("created_at", current_time),
             updated_at=kwargs.get("updated_at", current_time),
-            deleted_at=kwargs.get("deleted_at", None),
+            is_active=True,
         )
 
     def _rollback_user_creation(
@@ -55,6 +56,13 @@ class UserService:
                 "Failed to delete user during rollback",
                 extra={"user_id": user_id, "error": str(e)},
             )
+
+    @staticmethod
+    def _get_user_attr(attributes: list, name: str) -> Optional[str]:
+        return next(
+            (attr["Value"] for attr in attributes if attr["Name"] == name),
+            None,
+        )
 
     def create_user(
         self,
@@ -113,7 +121,73 @@ class UserService:
             first_name=first_name,
             last_name=last_name,
             memberships=created_user_memberships,
-            created_at=created_at_time.isoformat(),
-            updated_at=modified_at_time.isoformat(),
+            created_at=serialize_time(created_at_time),
+            updated_at=serialize_time(created_at_time),
         )
         return user
+
+    def get_location_users(self, context: Context, location_id: str) -> List[User]:
+        validate_permissions(context.user_id, location_id, "user:read")
+
+        auth_users = self.auth_client.list_users()
+
+        location_memberships = self.membership_service.get_location_memberships(
+            location_id
+        )
+
+        users: List[User] = []
+
+        for membership in location_memberships:
+            user_details = next(
+                (u for u in auth_users if u["Username"] == membership.user_id), None
+            )
+
+            if not user_details:
+                logging.warning(
+                    "Skipping user %s: user not found from auth client",
+                    membership.user_id,
+                )
+                continue
+
+            try:
+                attributes = user_details.get("Attributes", [])
+                user_id = user_details["Username"]
+
+                email = self._get_user_attr(attributes, "email")
+                first_name = self._get_user_attr(attributes, "given_name")
+                last_name = self._get_user_attr(attributes, "family_name")
+
+                if not all([email, first_name, last_name]):
+                    logging.warning(
+                        "Skipping user %s: missing required attributes", user_id
+                    )
+                    continue
+
+                created_at = serialize_time(user_details.get("UserCreateDate"))
+                updated_at = serialize_time(user_details.get("UserLastModifiedDate"))
+                is_active = user_details.get("Enabled")
+
+                user_memberships = self.membership_service.get_user_memberships(user_id)
+
+                users.append(
+                    User(
+                        id=user_id,
+                        email=email,
+                        first_name=first_name,
+                        last_name=last_name,
+                        memberships=user_memberships,
+                        created_at=created_at,
+                        updated_at=updated_at,
+                        is_active=is_active,
+                    )
+                )
+
+            except Exception as err:
+                logging.warning(
+                    "Skipping user %s: unexpected error during hydration %s",
+                    user_details.get("Username"),
+                    err,
+                )
+                continue
+
+        return users

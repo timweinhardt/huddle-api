@@ -18,7 +18,8 @@ class PostService:
         )
         self.membership_service = MembershipService()
 
-    def _build_post(self, **kwargs) -> Post:
+    @staticmethod
+    def _build_post(**kwargs) -> Post:
         current_time = get_current_time()
         return Post(
             id=kwargs.get("id", generate_uuid()),
@@ -31,7 +32,8 @@ class PostService:
             deleted_at=kwargs.get("deleted_at", None),
         )
 
-    def _serialize_post(self, post: Post) -> dict:
+    @staticmethod
+    def _serialize_post(post: Post) -> dict:
         item = post.model_dump()
         return item
 
