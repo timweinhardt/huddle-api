@@ -1,24 +1,31 @@
 from exponent_server_sdk import (
-    PushClient, PushMessage, PushServerError, DeviceNotRegisteredError
+    PushClient,
+    PushMessage,
+    PushServerError,
+    DeviceNotRegisteredError,
 )
+
 
 class NotificationService:
     def __init__(self, token_repo):
         self.push_client = PushClient()  # optional access token config
         self.token_repo = token_repo
 
-    def notify_new_post(self, recipient_tokens: list[str], post: dict):
+    def notify(
+        self,
+        recipient_tokens: list[str],
+        title: str,
+        body,
+        data: dict,
+        sound: str = "default",
+    ):
         messages = [
             PushMessage(
                 to=token,
-                title=f"{post['title']}",
-                body=f"{post['content']}",
-                data={
-                    "type": "NEW_POST",
-                    "post_id": post["id"],
-                    "location_id": post["location_id"],
-                },
-                sound="default",
+                title=title,
+                body=body,
+                data=data,
+                sound=sound,
             )
             for token in recipient_tokens
         ]
