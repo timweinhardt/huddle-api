@@ -26,7 +26,7 @@ class NotificationService:
             for user_id in recipient_user_ids
             for token in self.token_repo.get_tokens_for_user(user_id)
         ]
-   
+
         print(recipient_tokens)
         messages = [
             PushMessage(
