@@ -54,13 +54,20 @@ class PostService:
         self.db.put_item(item=item)
 
         # Notify location members about new post
-        location_memberships = self.membership_service.get_location_memberships(location_id)
+        location_memberships = self.membership_service.get_location_memberships(
+            location_id
+        )
         recipient_user_ids = [membership.user_id for membership in location_memberships]
-        self.notification_service.notify(recipient_user_ids, f"{post["title"]}", f"{post["content"]}", {
-            "type": "NEW_POST",
-            "post_id": post["id"],
-            "location_id": post["location_id"],
-        })
+        self.notification_service.notify(
+            recipient_user_ids,
+            f"{post["title"]}",
+            f"{post["content"]}",
+            {
+                "type": "NEW_POST",
+                "post_id": post["id"],
+                "location_id": post["location_id"],
+            },
+        )
         return post
 
     def get_post_by_id(
