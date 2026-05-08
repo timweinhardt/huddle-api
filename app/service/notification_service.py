@@ -5,20 +5,26 @@ from exponent_server_sdk import (
     DeviceNotRegisteredError,
 )
 
+from app.service.push_token_repository import ExponentPushTokenRepository
+
 
 class NotificationService:
-    def __init__(self, token_repo):
-        self.push_client = PushClient()  # optional access token config
-        self.token_repo = token_repo
+    def __init__(self):
+        self.push_client = PushClient()
+        self.token_repo = ExponentPushTokenRepository()
 
     def notify(
         self,
-        recipient_tokens: list[str],
+        recipient_user_ids: list[str],
         title: str,
         body,
         data: dict,
         sound: str = "default",
     ):
+        recipient_tokens = [
+            self.token_repo.get_token_for_user(user_id)
+            for user_id in recipient_user_ids
+        ]
         messages = [
             PushMessage(
                 to=token,

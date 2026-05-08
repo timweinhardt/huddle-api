@@ -223,6 +223,32 @@ Resources:
             ProjectionType: ALL
       SSESpecification:
         SSEEnabled: true
+  ExponentPushToken:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${Environment}-huddle-exponent-push-tokens"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: user_id
+          AttributeType: S
+        - AttributeName: push_token
+          AttributeType: S
+      KeySchema:
+        - AttributeName: user_id
+          KeyType: HASH
+        - AttributeName: push_token
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        # Lets us look up/deactivate a device token when we only have the
+        # Expo push token string (e.g. from DeviceNotRegisteredError).
+        - IndexName: push_token-index
+          KeySchema:
+            - AttributeName: push_token
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      SSESpecification:
+        SSEEnabled: true
   PostsTable:
     Type: AWS::DynamoDB::Table
     Properties:

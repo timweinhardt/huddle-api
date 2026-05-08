@@ -60,8 +60,8 @@ class PostService:
         recipient_user_ids = [membership.user_id for membership in location_memberships]
         self.notification_service.notify(
             recipient_user_ids,
-            f"{post["title"]}",
-            f"{post["content"]}",
+            post["title"],
+            post["content"],
             {
                 "type": "NEW_POST",
                 "post_id": post["id"],
