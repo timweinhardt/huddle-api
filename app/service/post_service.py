@@ -7,6 +7,7 @@ from app.core.permissions import validate_permissions
 from app.db import Table
 from app.model.post_model import Post
 from app.service.membership_service import MembershipService
+from app.service.notification_service import NotificationService
 from app.utils.ids import generate_uuid
 from app.utils.time import get_current_time
 
@@ -17,6 +18,7 @@ class PostService:
             table_name=config.posts_table_name, aws_region=config.aws_region
         )
         self.membership_service = MembershipService()
+        self.notification_service = NotificationService()
 
     @staticmethod
     def _build_post(**kwargs) -> Post:
@@ -50,6 +52,9 @@ class PostService:
         )
         item = self._serialize_post(post)
         self.db.put_item(item=item)
+        location_memberships = self.membership_service.get_location_memberships(location_id)
+        recipient_user_ids = [membership.user_id for membership in location_memberships]
+        self.notification_service.notify_new_post(recipient_user_ids, post)
         return post
 
     def get_post_by_id(

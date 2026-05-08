@@ -10,3 +10,4 @@ botocore[crt]
 httpx
 pylint
 black
+exponent_server_sdk
