@@ -60,15 +60,15 @@ class PostService:
         recipient_user_ids = [membership.user_id for membership in location_memberships]
         self.notification_service.notify(
             recipient_user_ids,
-            post["title"],
-            post["content"],
+            item["title"],
+            item["content"],
             {
                 "type": "NEW_POST",
-                "post_id": post["id"],
-                "location_id": post["location_id"],
+                "post_id": item["id"],
+                "location_id": item["location_id"],
             },
         )
-        return post
+        return item
 
     def get_post_by_id(
         self, context: Context, post_id: str, include_deleted: bool = False
