@@ -2,8 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.context import Context, get_context
 from app.core.exceptions import (
-    AlreadyExistsError,
-    AuthClientError,
     DatabaseError,
     PermissionDeniedError,
 )
@@ -28,12 +26,8 @@ def register_push_token(
         token_repo.register_token(user_id=ctx.user_id, push_token=req.push_token)
     except DatabaseError as err:
         raise HTTPException(status_code=503, detail=str(err)) from err
-    except AuthClientError as err:
-        raise HTTPException(status_code=503, detail=str(err)) from err
     except PermissionDeniedError as err:
         raise HTTPException(status_code=403, detail=str(err)) from err
-    except AlreadyExistsError as err:
-        raise HTTPException(status_code=409, detail=str(err)) from err
     return RegisterPushTokenResp()
 
 
@@ -46,7 +40,5 @@ def unregister_push_token(
     try:
         token_repo.deactivate_token(push_token=req.push_token)
     except DatabaseError as err:
-        raise HTTPException(status_code=503, detail=str(err)) from err
-    except AuthClientError as err:
         raise HTTPException(status_code=503, detail=str(err)) from err
     return UnregisterPushTokenResp()
