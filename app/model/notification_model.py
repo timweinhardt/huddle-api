@@ -18,6 +18,5 @@ class UnregisterPushTokenReq(BaseModel):
 class RegisterPushTokenResp(BaseModel):
     pass
 
-
 class UnregisterPushTokenResp(BaseModel):
     pass

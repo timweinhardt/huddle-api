@@ -49,3 +49,4 @@ def unregister_push_token(
         raise HTTPException(status_code=503, detail=str(err)) from err
     except AuthClientError as err:
         raise HTTPException(status_code=503, detail=str(err)) from err
+    return UnregisterPushTokenResp()
