@@ -7,7 +7,12 @@ from app.core.exceptions import (
     DatabaseError,
     PermissionDeniedError,
 )
-from app.model.notification_model import RegisterPushTokenReq, RegisterPushTokenResp
+from app.model.notification_model import (
+    RegisterPushTokenReq,
+    RegisterPushTokenResp,
+    UnregisterPushTokenReq,
+    UnregisterPushTokenResp,
+)
 from app.service.push_token_repository import ExponentPushTokenRepository
 
 router = APIRouter()
@@ -30,3 +35,17 @@ def register_push_token(
     except AlreadyExistsError as err:
         raise HTTPException(status_code=409, detail=str(err)) from err
     return RegisterPushTokenResp()
+
+
+@router.post("/unregister_push_token", response_model=UnregisterPushTokenResp)
+def unregister_push_token(
+    req: UnregisterPushTokenReq,
+    _: Context = Depends(get_context),
+    token_repo: ExponentPushTokenRepository = Depends(),
+) -> UnregisterPushTokenResp:
+    try:
+        token_repo.deactivate_token(push_token=req.push_token)
+    except DatabaseError as err:
+        raise HTTPException(status_code=503, detail=str(err)) from err
+    except AuthClientError as err:
+        raise HTTPException(status_code=503, detail=str(err)) from err

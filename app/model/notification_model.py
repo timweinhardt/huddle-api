@@ -11,5 +11,13 @@ class RegisterPushTokenReq(BaseModel):
     push_token: str
 
 
+class UnregisterPushTokenReq(BaseModel):
+    push_token: str
+
+
 class RegisterPushTokenResp(BaseModel):
+    pass
+
+
+class UnregisterPushTokenResp(BaseModel):
     pass
