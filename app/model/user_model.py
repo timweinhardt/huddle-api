@@ -27,15 +27,12 @@ class CreateUserResp(User):
     pass
 
 
-class UpdateUserReq(BaseModel):
-    email: Optional[str] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+class UploadProfilePictureReq(BaseModel):
     picture: Optional[str] = None
 
 
-class UpdateUserResp(BaseModel):
-    pass
+class UploadProfilePictureResp(BaseModel):
+    picture_url: str
 
 
 class GetLocationUsersResp(BaseModel):

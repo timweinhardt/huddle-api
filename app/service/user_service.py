@@ -8,7 +8,7 @@ from app.core.context import Context
 from app.core.exceptions import PermissionDeniedError, UserCreationError
 from app.core.permissions import validate_permissions
 from app.model.membership_model import UserMembership
-from app.model.user_model import User
+from app.model.user_model import User, UploadProfilePictureResp
 from app.s3 import upload_image_to_s3
 from app.service.membership_service import MembershipService
 from app.utils.time import get_current_time, serialize_time
@@ -128,15 +128,12 @@ class UserService:
         )
         return user
 
-    def update_user(
+    def upload_profile_picture(
         self,
         context: Context,
         user_id: str,
-        email: Optional[str] = None,
-        first_name: Optional[str] = None,
-        last_name: Optional[str] = None,
         picture: Optional[str] = None,
-    ) -> None:
+    ) -> UploadProfilePictureResp:
         is_owner = context.user_id == user_id
         common_location_membership = (
             self.membership_service.get_common_location_membership(
@@ -164,13 +161,8 @@ class UserService:
                 picture_filename,
                 config.aws_region,
             )
-        self.update_cognito_user_attributes(
-            user_id,
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-            picture=picture_url,
-        )
+
+        return UploadProfilePictureResp(picture_url=picture_url)
 
     def update_cognito_user_attributes(
         self,

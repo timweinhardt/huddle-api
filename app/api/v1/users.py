@@ -13,8 +13,8 @@ from app.model.user_model import (
     CreateUserReq,
     CreateUserResp,
     GetLocationUsersResp,
-    UpdateUserReq,
-    UpdateUserResp,
+    UploadProfilePictureReq,
+    UploadProfilePictureResp,
 )
 from app.service.user_service import UserService
 
@@ -46,20 +46,19 @@ def create_user(
     return user
 
 
-@router.patch("/users/{user_id}", response_model=UpdateUserResp)
-def update_user(
-    req: UpdateUserReq,
+@router.post(
+    "/users/{user_id}/profile-picture", response_model=UploadProfilePictureResp
+)
+def upload_profile_picture(
+    req: UploadProfilePictureReq,
     user_id: str,
     ctx: Context = Depends(get_context),
     user_service: UserService = Depends(),
-) -> UpdateUserResp:
+) -> UploadProfilePictureResp:
     try:
-        user_service.update_user(
+        resp = user_service.upload_profile_picture(
             context=ctx,
             user_id=user_id,
-            email=req.email,
-            first_name=req.first_name,
-            last_name=req.last_name,
             picture=req.picture,
         )
     except AlreadyExistsError as err:
@@ -72,7 +71,7 @@ def update_user(
         raise HTTPException(status_code=403, detail=str(err)) from err
     except S3UploadError as err:
         raise HTTPException(status_code=503, detail=str(err)) from err
-    return UpdateUserResp()
+    return resp
 
 
 @router.get("/locations/{location_id}/users", response_model=GetLocationUsersResp)
