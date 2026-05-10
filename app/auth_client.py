@@ -45,6 +45,23 @@ class AuthClient:
             raise AuthClientError(f"AWS error: {str(err)}") from err
         return resp
 
+    def admin_update_user_attributes(self, username: str, user_attributes: list):
+        try:
+            self.client.admin_update_user_attributes(
+                UserPoolId=self.user_pool_id,
+                Username=username,
+                UserAttributes=user_attributes,
+            )
+
+        except ClientError as err:
+            if err.response["Error"]["Code"] == "AliasExistsException":
+                raise AlreadyExistsError(
+                    f"User with email {user_attributes[0]['Value']} already exists"
+                ) from err
+            raise AuthClientError(f"Cognito client error: {str(err)}") from err
+        except BotoCoreError as err:
+            raise AuthClientError(f"AWS error: {str(err)}") from err
+
     def list_users(self):
         users = []
         pagination_token = None

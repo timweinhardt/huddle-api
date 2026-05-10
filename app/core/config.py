@@ -10,6 +10,7 @@ class Config(BaseSettings):
     environment: str = os.getenv("ENVIRONMENT", "dev")
     aws_region: str = os.getenv("AWS_REGION", "us-east-2")
     cognito_user_pool_id: str = os.getenv("COGNITO_USER_POOL_ID")
+    s3_bucket_name: str = os.getenv("S3_BUCKET_NAME")
 
     @property
     def jwks_uri(self):

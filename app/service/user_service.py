@@ -9,8 +9,10 @@ from app.core.exceptions import UserCreationError
 from app.core.permissions import validate_permissions
 from app.model.membership_model import UserMembership
 from app.model.user_model import User
+from app.s3 import upload_image_to_s3
 from app.service.membership_service import MembershipService
 from app.utils.time import get_current_time, serialize_time
+from app.utils.image import parse_base64_image
 
 
 class UserService:
@@ -126,6 +128,61 @@ class UserService:
         )
         return user
 
+    def update_user(
+        self,
+        user_id: str,
+        email: Optional[str] = None,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
+        picture: Optional[str] = None,
+    ) -> None:
+        picture_url = None
+        if picture is not None:
+            image_data, content_type, extension = parse_base64_image(picture)
+            picture_filename = f"users/{user_id}/picture"
+            if extension is not None:
+                picture_filename += f".{extension}"
+
+            picture_url = upload_image_to_s3(
+                image_data,
+                content_type,
+                config.s3_bucket_name,
+                picture_filename,
+                config.aws_region,
+            )
+        self.update_cognito_user_attributes(
+            user_id,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            picture=picture_url,
+        )
+
+    def update_cognito_user_attributes(
+        self,
+        username: str,
+        *,
+        email: Optional[str] = None,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
+        picture: Optional[str] = None,
+    ) -> None:
+        user_attributes: List[dict] = []
+        if email is not None:
+            user_attributes.append({"Name": "email", "Value": email})
+        if first_name is not None:
+            user_attributes.append({"Name": "given_name", "Value": first_name})
+        if last_name is not None:
+            user_attributes.append({"Name": "family_name", "Value": last_name})
+        if picture is not None:
+            user_attributes.append({"Name": "picture", "Value": picture})
+        if not user_attributes:
+            raise ValueError(
+                "At least one of email, first_name, last_name, picture must be provided"
+            )
+
+        self.auth_client.admin_update_user_attributes(username, user_attributes)
+
     def get_location_users(self, context: Context, location_id: str) -> List[User]:
         validate_permissions(context.user_id, location_id, "user:read")
 
@@ -156,6 +213,7 @@ class UserService:
                 email = self._get_user_attr(attributes, "email")
                 first_name = self._get_user_attr(attributes, "given_name")
                 last_name = self._get_user_attr(attributes, "family_name")
+                avatar_url = self._get_user_attr(attributes, "picture")
 
                 if not all([email, first_name, last_name]):
                     logging.warning(
@@ -175,6 +233,7 @@ class UserService:
                         email=email,
                         first_name=first_name,
                         last_name=last_name,
+                        avatar_url=avatar_url,
                         memberships=user_memberships,
                         created_at=created_at,
                         updated_at=updated_at,

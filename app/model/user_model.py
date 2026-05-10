@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 
 from app.model.membership_model import UserMembership
@@ -9,6 +9,7 @@ class User(BaseModel):
     email: str
     first_name: str
     last_name: str
+    avatar_url: Optional[str] = None
     memberships: List[UserMembership]
     created_at: str
     updated_at: str
@@ -23,6 +24,17 @@ class CreateUserReq(BaseModel):
 
 
 class CreateUserResp(User):
+    pass
+
+
+class UpdateUserReq(BaseModel):
+    email: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    picture: Optional[str] = None
+
+
+class UpdateUserResp(BaseModel):
     pass
 
 
