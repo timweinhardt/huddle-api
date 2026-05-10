@@ -54,10 +54,8 @@ def update_user(
     user_service: UserService = Depends(),
 ) -> UpdateUserResp:
     try:
-        if ctx.user_id != user_id:
-            raise PermissionDeniedError("You are not authorized to update this user")
-
         user_service.update_user(
+            context=ctx,
             user_id=user_id,
             email=req.email,
             first_name=req.first_name,

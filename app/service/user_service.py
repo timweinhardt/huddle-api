@@ -5,7 +5,7 @@ from typing import List, Optional
 from app.auth_client import AuthClient
 from app.core.config import config
 from app.core.context import Context
-from app.core.exceptions import UserCreationError
+from app.core.exceptions import PermissionDeniedError, UserCreationError
 from app.core.permissions import validate_permissions
 from app.model.membership_model import UserMembership
 from app.model.user_model import User
@@ -130,12 +130,26 @@ class UserService:
 
     def update_user(
         self,
+        context: Context,
         user_id: str,
         email: Optional[str] = None,
         first_name: Optional[str] = None,
         last_name: Optional[str] = None,
         picture: Optional[str] = None,
     ) -> None:
+        is_owner = context.user_id == user_id
+        common_location_membership = (
+            self.membership_service.get_common_location_membership(
+                context.user_id, user_id
+            )
+        )
+        if common_location_membership is None:
+            raise PermissionDeniedError("You are not authorized to update this user")
+
+        validate_permissions(
+            context.user_id, common_location_membership, "user:update", is_owner
+        )
+
         picture_url = None
         if picture is not None:
             image_data, content_type, extension = parse_base64_image(picture)
