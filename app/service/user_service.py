@@ -132,7 +132,8 @@ class UserService:
         self,
         context: Context,
         user_id: str,
-        picture: Optional[str] = None,
+        base64: Optional[str] = None,
+        extension: Optional[str] = None,
     ) -> UploadProfilePictureResp:
         is_owner = context.user_id == user_id
         common_location_membership = (
@@ -148,8 +149,8 @@ class UserService:
         )
 
         picture_url = None
-        if picture is not None:
-            image_data, content_type, extension = parse_base64_image(picture)
+        if base64 is not None:
+            image_data, content_type = parse_base64_image(base64)
             picture_filename = f"users/{user_id}/picture"
             if extension is not None:
                 picture_filename += f".{extension}"

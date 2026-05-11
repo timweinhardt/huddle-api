@@ -2,7 +2,7 @@ import base64
 import io
 
 
-def parse_base64_image(base64_string: str) -> tuple[io.BytesIO, str, str]:
+def parse_base64_image(base64_string: str) -> tuple[io.BytesIO, str]:
     """
     Decode a base64 string (with or without data url prefix)
     and return an in-memory file-like object and its content type, ready for S3 upload.
@@ -29,4 +29,4 @@ def parse_base64_image(base64_string: str) -> tuple[io.BytesIO, str, str]:
 
     image_bytes = base64.b64decode(b64_data)
     buf = io.BytesIO(image_bytes)
-    return buf, content_type, ext
+    return buf, content_type

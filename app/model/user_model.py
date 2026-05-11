@@ -28,7 +28,8 @@ class CreateUserResp(User):
 
 
 class UploadProfilePictureReq(BaseModel):
-    picture: Optional[str] = None
+    base64: Optional[str] = None
+    extension: Optional[str] = None
 
 
 class UploadProfilePictureResp(BaseModel):

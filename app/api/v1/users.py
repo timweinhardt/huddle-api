@@ -59,7 +59,8 @@ def upload_profile_picture(
         resp = user_service.upload_profile_picture(
             context=ctx,
             user_id=user_id,
-            picture=req.picture,
+            base64=req.base64,
+            extension=req.extension,
         )
     except AlreadyExistsError as err:
         raise HTTPException(status_code=409, detail=str(err)) from err
