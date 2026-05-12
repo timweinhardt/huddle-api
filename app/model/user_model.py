@@ -14,6 +14,7 @@ class User(BaseModel):
     created_at: str
     updated_at: str
     is_active: bool
+    is_confirmed: bool
 
 
 class CreateUserReq(BaseModel):

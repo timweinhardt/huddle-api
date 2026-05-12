@@ -32,6 +32,7 @@ class UserService:
             created_at=kwargs.get("created_at", current_time),
             updated_at=kwargs.get("updated_at", current_time),
             is_active=True,
+            is_confirmed=False,
         )
 
     def _rollback_user_creation(
@@ -231,6 +232,7 @@ class UserService:
                 created_at = serialize_time(user_details.get("UserCreateDate"))
                 updated_at = serialize_time(user_details.get("UserLastModifiedDate"))
                 is_active = user_details.get("Enabled")
+                is_confirmed = user_details.get("UserStatus") == "CONFIRMED"
 
                 user_memberships = self.membership_service.get_user_memberships(user_id)
 
@@ -245,6 +247,7 @@ class UserService:
                         created_at=created_at,
                         updated_at=updated_at,
                         is_active=is_active,
+                        is_confirmed=is_confirmed,
                     )
                 )
 
