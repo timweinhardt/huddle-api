@@ -1,5 +1,6 @@
 from datetime import datetime
 import logging
+import time
 from typing import List, Optional
 
 from app.auth_client import AuthClient
@@ -183,6 +184,8 @@ class UserService:
                 picture_filename,
                 config.aws_region,
             )
+
+        picture_url = f"{picture_url}#t={int(time.time())}"
 
         return UploadProfilePictureResp(picture_url=picture_url)
 
