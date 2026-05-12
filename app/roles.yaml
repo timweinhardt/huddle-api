@@ -3,6 +3,10 @@ roles:
     - user:read:any
     - user:update:own
     - post:read
+  TRAINER:
+    - user:read:any
+    - user:update:own
+    - post:read
   TEAM_LEADER:
     - user:read:any
     - user:update:own
