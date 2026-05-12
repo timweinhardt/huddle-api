@@ -148,7 +148,11 @@ class UserService:
             raise PermissionDeniedError("You are not authorized to update this user")
         validate_permissions(context.user_id, common_location_membership, "user:update")
         self.update_cognito_user_attributes(
-            user_id, email=email, first_name=first_name, last_name=last_name, picture=picture_url
+            user_id,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            picture=picture_url,
         )
 
     def upload_profile_picture(
