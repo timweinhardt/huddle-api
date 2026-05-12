@@ -37,6 +37,7 @@ class UpdateUserReq(BaseModel):
     email: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    picture_url: Optional[str] = None
 
 
 class UpdateUserResp(BaseModel):

@@ -62,6 +62,7 @@ def update_user(
             email=req.email,
             first_name=req.first_name,
             last_name=req.last_name,
+            picture_url=req.picture_url,
         )
     except DatabaseError as err:
         raise HTTPException(status_code=503, detail=str(err)) from err
