@@ -33,6 +33,16 @@ class UploadProfilePictureReq(BaseModel):
     extension: Optional[str] = None
 
 
+class UpdateUserReq(BaseModel):
+    email: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+
+
+class UpdateUserResp(BaseModel):
+    pass
+
+
 class UploadProfilePictureResp(BaseModel):
     picture_url: str
 

@@ -13,6 +13,8 @@ from app.model.user_model import (
     CreateUserReq,
     CreateUserResp,
     GetLocationUsersResp,
+    UpdateUserReq,
+    UpdateUserResp,
     UploadProfilePictureReq,
     UploadProfilePictureResp,
 )
@@ -44,6 +46,30 @@ def create_user(
     except AlreadyExistsError as err:
         raise HTTPException(status_code=409, detail=str(err)) from err
     return user
+
+
+@router.patch("/users/{user_id}", response_model=UpdateUserResp)
+def update_user(
+    req: UpdateUserReq,
+    user_id: str,
+    ctx: Context = Depends(get_context),
+    user_service: UserService = Depends(),
+) -> UpdateUserResp:
+    try:
+        user_service.update_user(
+            context=ctx,
+            user_id=user_id,
+            email=req.email,
+            first_name=req.first_name,
+            last_name=req.last_name,
+        )
+    except DatabaseError as err:
+        raise HTTPException(status_code=503, detail=str(err)) from err
+    except AuthClientError as err:
+        raise HTTPException(status_code=503, detail=str(err)) from err
+    except PermissionDeniedError as err:
+        raise HTTPException(status_code=403, detail=str(err)) from err
+    return UpdateUserResp()
 
 
 @router.post(

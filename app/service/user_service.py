@@ -129,6 +129,26 @@ class UserService:
         )
         return user
 
+    def update_user(
+        self,
+        context: Context,
+        user_id: str,
+        email: Optional[str] = None,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
+    ) -> None:
+        common_location_membership = (
+            self.membership_service.get_common_location_membership(
+                context.user_id, user_id
+            )
+        )
+        if common_location_membership is None:
+            raise PermissionDeniedError("You are not authorized to update this user")
+        validate_permissions(context.user_id, common_location_membership, "user:update")
+        self.update_cognito_user_attributes(
+            user_id, email=email, first_name=first_name, last_name=last_name
+        )
+
     def upload_profile_picture(
         self,
         context: Context,
