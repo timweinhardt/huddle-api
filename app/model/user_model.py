@@ -40,6 +40,17 @@ class UpdateUserReq(BaseModel):
     picture_url: Optional[str] = None
 
 
+class InviteUserReq(BaseModel):
+    email: str
+    first_name: str
+    last_name: str
+    memberships: List[UserMembership]
+
+
+class InviteUserResp(BaseModel):
+    pass
+
+
 class UpdateUserResp(BaseModel):
     pass
 

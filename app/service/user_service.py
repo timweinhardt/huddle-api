@@ -6,7 +6,7 @@ from typing import List, Optional
 from app.auth_client import AuthClient
 from app.core.config import config
 from app.core.context import Context
-from app.core.exceptions import PermissionDeniedError, UserCreationError
+from app.core.exceptions import NotFoundError, PermissionDeniedError, UserCreationError
 from app.core.permissions import validate_permissions
 from app.model.membership_model import UserMembership
 from app.model.user_model import User, UploadProfilePictureResp
@@ -128,6 +128,33 @@ class UserService:
             created_at=serialize_time(created_at_time),
             updated_at=serialize_time(created_at_time),
         )
+        return user
+
+    def invite_user(
+        self,
+        context: Context,
+        email: str,
+        first_name: str,
+        last_name: str,
+        memberships: List[UserMembership],
+    ) -> User:
+        try:
+            user = self.auth_client.admin_get_user_by_email(email)
+        except NotFoundError:
+            user = self.create_user(
+                context=context,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                memberships=memberships,
+            )
+        else:
+            for membership in memberships:
+                self.membership_service.create_membership(
+                    user_id=user["Username"],
+                    location_id=membership.location_id,
+                    roles=membership.roles,
+                )
         return user
 
     def update_user(

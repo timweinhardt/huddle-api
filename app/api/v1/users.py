@@ -17,10 +17,37 @@ from app.model.user_model import (
     UpdateUserResp,
     UploadProfilePictureReq,
     UploadProfilePictureResp,
+    InviteUserReq,
+    InviteUserResp,
 )
 from app.service.user_service import UserService
 
 router = APIRouter()
+
+
+@router.post("/users/invite", response_model=InviteUserResp)
+def invite_user(
+    req: InviteUserReq,
+    ctx: Context = Depends(get_context),
+    user_service: UserService = Depends(),
+) -> InviteUserResp:
+    try:
+        user_service.invite_user(
+            context=ctx,
+            email=req.email,
+            first_name=req.first_name,
+            last_name=req.last_name,
+            memberships=req.memberships,
+        )
+    except DatabaseError as err:
+        raise HTTPException(status_code=503, detail=str(err)) from err
+    except AuthClientError as err:
+        raise HTTPException(status_code=503, detail=str(err)) from err
+    except PermissionDeniedError as err:
+        raise HTTPException(status_code=403, detail=str(err)) from err
+    except AlreadyExistsError as err:
+        raise HTTPException(status_code=409, detail=str(err)) from err
+    return InviteUserResp()
 
 
 @router.post("/users", response_model=CreateUserResp)
