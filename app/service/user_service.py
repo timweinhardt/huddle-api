@@ -185,7 +185,7 @@ class UserService:
             picture_url = upload_image_to_s3(
                 image_data,
                 content_type,
-                config.s3_bucket_name,
+                config.profile_picture_bucket_name,
                 picture_filename,
                 config.aws_region,
             )
