@@ -19,6 +19,8 @@ class AuthClient:
                 ValidationData=[
                     {"Name": "string", "Value": "string"},
                 ],
+                MessageAction="RESEND",
+                DesiredDeliveryMediums=["EMAIL"],
             )
             return resp.get("User", {})
         except ClientError as err:
