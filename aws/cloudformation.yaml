@@ -38,6 +38,7 @@ Resources:
       Environment:
         Variables:
           COGNITO_USER_POOL_ID: !Ref CognitoUserPoolID
+          PROFILE_PICTURE_BUCKET_NAME: !Sub "${Environment}-huddle-profile-pictures"
           ENVIRONMENT: !Ref Environment
 
   LambdaExecutionRole:
@@ -99,7 +100,7 @@ Resources:
                 Action:
                   - s3:PutObject
                   - s3:PutObjectAcl
-                Resource: !Sub "${ProfilePicturesBucket.Arn}/*"
+                Resource: !Sub "arn:aws:s3:::${Environment}-huddle-profile-pictures/*"
 
   ApiGateway:
     Type: AWS::ApiGateway::RestApi
@@ -310,3 +311,5 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
+      SSESpecification:
+        SSEEnabled: true
