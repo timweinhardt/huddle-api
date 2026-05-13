@@ -38,7 +38,6 @@ Resources:
       Environment:
         Variables:
           COGNITO_USER_POOL_ID: !Ref CognitoUserPoolID
-          PROFILE_PICTURE_BUCKET_NAME: !Ref ProfilePicturesBucket
           ENVIRONMENT: !Ref Environment
 
   LambdaExecutionRole:
@@ -207,7 +206,7 @@ Resources:
   ProfilePicturesBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "${Environment}-huddle-profile-pictures-${AWS::AccountId}"
+      BucketName: !Sub "${Environment}-huddle-profile-pictures"
       OwnershipControls:
         Rules:
           - ObjectOwnership: BucketOwnerPreferred
@@ -311,12 +310,3 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
-      SSESpecification:
-        SSEEnabled: true
-
-Outputs:
-  ProfilePicturesBucketName:
-    Description: S3 bucket for user profile pictures
-    Value: !Ref ProfilePicturesBucket
-    Export:
-      Name: !Sub "${AWS::StackName}-ProfilePicturesBucketName"
