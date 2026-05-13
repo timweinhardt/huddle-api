@@ -1,13 +1,21 @@
 roles:
   TEAM_MEMBER:
     - user:read:any
+    - user:update:own
+    - post:read
+  TRAINER:
+    - user:read:any
+    - user:update:own
     - post:read
   TEAM_LEADER:
     - user:read:any
+    - user:update:own
     - post:read
   DIRECTOR:
     - user:read:any
     - user:create
+    - user:update:own
+    - user:update:any
     - post:read
     - post:create
     - post:update:own
@@ -15,12 +23,16 @@ roles:
   OPERATOR:
     - user:read:any
     - user:create
+    - user:update:own
+    - user:update:any
     - post:read
     - post:create
     - post:update:own
     - post:delete:any
   ADMIN:
     - user:read:any
+    - user:update:own
+    - user:update:any
     - post:read
     - post:create
     - post:update:own

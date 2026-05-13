@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 class Role(str, Enum):
     TEAM_MEMBER = "TEAM_MEMBER"
+    TRAINER = "TRAINER"
     TEAM_LEADER = "TEAM_LEADER"
     DIRECTOR = "DIRECTOR"
     OPERATOR = "OPERATOR"

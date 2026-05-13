@@ -1,16 +1,19 @@
 from datetime import datetime
 import logging
+import time
 from typing import List, Optional
 
 from app.auth_client import AuthClient
 from app.core.config import config
 from app.core.context import Context
-from app.core.exceptions import UserCreationError
+from app.core.exceptions import NotFoundError, PermissionDeniedError, UserCreationError
 from app.core.permissions import validate_permissions
 from app.model.membership_model import UserMembership
-from app.model.user_model import User
+from app.model.user_model import User, UploadProfilePictureResp
+from app.s3 import upload_image_to_s3
 from app.service.membership_service import MembershipService
 from app.utils.time import get_current_time, serialize_time
+from app.utils.image import parse_base64_image
 
 
 class UserService:
@@ -30,6 +33,7 @@ class UserService:
             created_at=kwargs.get("created_at", current_time),
             updated_at=kwargs.get("updated_at", current_time),
             is_active=True,
+            is_confirmed=False,
         )
 
     def _rollback_user_creation(
@@ -126,6 +130,122 @@ class UserService:
         )
         return user
 
+    def invite_user(
+        self,
+        context: Context,
+        email: str,
+        first_name: str,
+        last_name: str,
+        memberships: List[UserMembership],
+    ) -> User:
+        try:
+            user = self.auth_client.admin_get_user_by_email(email)
+        except NotFoundError:
+            user = self.create_user(
+                context=context,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                memberships=memberships,
+            )
+        else:
+            for membership in memberships:
+                self.membership_service.create_membership(
+                    user_id=user["Username"],
+                    location_id=membership.location_id,
+                    roles=membership.roles,
+                )
+        return user
+
+    def update_user(
+        self,
+        context: Context,
+        user_id: str,
+        email: Optional[str] = None,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
+        picture_url: Optional[str] = None,
+    ) -> None:
+        common_location_membership = (
+            self.membership_service.get_common_location_membership(
+                context.user_id, user_id
+            )
+        )
+        if common_location_membership is None:
+            raise PermissionDeniedError("You are not authorized to update this user")
+        validate_permissions(context.user_id, common_location_membership, "user:update")
+        self.update_cognito_user_attributes(
+            user_id,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            picture=picture_url,
+        )
+
+    def upload_profile_picture(
+        self,
+        context: Context,
+        user_id: str,
+        base64: Optional[str] = None,
+        extension: Optional[str] = None,
+    ) -> UploadProfilePictureResp:
+        is_owner = context.user_id == user_id
+        common_location_membership = (
+            self.membership_service.get_common_location_membership(
+                context.user_id, user_id
+            )
+        )
+        if common_location_membership is None:
+            raise PermissionDeniedError("You are not authorized to update this user")
+
+        validate_permissions(
+            context.user_id, common_location_membership, "user:update", is_owner
+        )
+
+        picture_url = None
+        if base64 is not None:
+            image_data, content_type = parse_base64_image(base64)
+            picture_filename = f"users/{user_id}/picture"
+            if extension is not None:
+                picture_filename += f".{extension}"
+
+            picture_url = upload_image_to_s3(
+                image_data,
+                content_type,
+                config.profile_picture_bucket_name,
+                picture_filename,
+                config.aws_region,
+            )
+
+        picture_url = f"{picture_url}#t={int(time.time())}"
+
+        return UploadProfilePictureResp(picture_url=picture_url)
+
+    def update_cognito_user_attributes(
+        self,
+        username: str,
+        *,
+        email: Optional[str] = None,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
+        picture: Optional[str] = None,
+    ) -> None:
+        user_attributes: List[dict] = []
+        if email is not None:
+            user_attributes.append({"Name": "email", "Value": email})
+        if first_name is not None:
+            user_attributes.append({"Name": "given_name", "Value": first_name})
+        if last_name is not None:
+            user_attributes.append({"Name": "family_name", "Value": last_name})
+        if picture is not None:
+            user_attributes.append({"Name": "picture", "Value": picture})
+        if not user_attributes:
+            raise ValueError(
+                "At least one of email, first_name, last_name, picture must be provided"
+            )
+
+        self.auth_client.admin_update_user_attributes(username, user_attributes)
+
     def get_location_users(self, context: Context, location_id: str) -> List[User]:
         validate_permissions(context.user_id, location_id, "user:read")
 
@@ -156,6 +276,7 @@ class UserService:
                 email = self._get_user_attr(attributes, "email")
                 first_name = self._get_user_attr(attributes, "given_name")
                 last_name = self._get_user_attr(attributes, "family_name")
+                avatar_url = self._get_user_attr(attributes, "picture")
 
                 if not all([email, first_name, last_name]):
                     logging.warning(
@@ -166,6 +287,7 @@ class UserService:
                 created_at = serialize_time(user_details.get("UserCreateDate"))
                 updated_at = serialize_time(user_details.get("UserLastModifiedDate"))
                 is_active = user_details.get("Enabled")
+                is_confirmed = user_details.get("UserStatus") == "CONFIRMED"
 
                 user_memberships = self.membership_service.get_user_memberships(user_id)
 
@@ -175,10 +297,12 @@ class UserService:
                         email=email,
                         first_name=first_name,
                         last_name=last_name,
+                        avatar_url=avatar_url,
                         memberships=user_memberships,
                         created_at=created_at,
                         updated_at=updated_at,
                         is_active=is_active,
+                        is_confirmed=is_confirmed,
                     )
                 )
 

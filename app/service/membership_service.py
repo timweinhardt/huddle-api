@@ -113,3 +113,17 @@ class MembershipService:
     def is_member(self, user_id: str, location_id: str) -> bool:
         key = self._get_membership_key(user_id, location_id)
         return self.db.item_exists(key)
+
+    def get_common_location_membership(
+        self, first_user_id, second_user_id
+    ) -> str | None:
+        """
+        Check if two users have any common location memberships.
+        """
+        first_user_memberships = self.get_user_memberships(first_user_id)
+        second_user_memberships = self.get_user_memberships(second_user_id)
+        for first_membership in first_user_memberships:
+            for second_membership in second_user_memberships:
+                if first_membership.location_id == second_membership.location_id:
+                    return first_membership.location_id
+        return None

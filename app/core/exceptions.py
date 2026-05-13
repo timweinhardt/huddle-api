@@ -2,6 +2,10 @@ class DatabaseError(Exception):
     """Raised when a database operation fails."""
 
 
+class S3UploadError(Exception):
+    """Raised when an S3 upload operation fails."""
+
+
 class AuthClientError(Exception):
     """Raised when an auth client (i.e. Cognito client) operation fails."""
 

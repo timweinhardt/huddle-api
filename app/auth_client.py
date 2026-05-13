@@ -2,7 +2,7 @@ import boto3
 
 from botocore.exceptions import BotoCoreError, ClientError
 from app.core.config import config
-from app.core.exceptions import AlreadyExistsError, AuthClientError
+from app.core.exceptions import AlreadyExistsError, AuthClientError, NotFoundError
 
 
 class AuthClient:
@@ -44,6 +44,39 @@ class AuthClient:
         except BotoCoreError as err:
             raise AuthClientError(f"AWS error: {str(err)}") from err
         return resp
+
+    def admin_get_user_by_email(self, email: str):
+        try:
+            users = self.client.list_users(
+                UserPoolId=self.user_pool_id,
+                Filter=f'email = "{email}"',
+            )
+            if not users["Users"]:
+                raise NotFoundError(f"User with email {email} not found")
+            return users["Users"][0]
+        except ClientError as err:
+            if err.response["Error"]["Code"] == "UserNotFoundException":
+                raise NotFoundError(f"User with email {email} not found") from err
+            raise AuthClientError(f"Cognito client error: {str(err)}") from err
+        except BotoCoreError as err:
+            raise AuthClientError(f"AWS error: {str(err)}") from err
+
+    def admin_update_user_attributes(self, username: str, user_attributes: list):
+        try:
+            self.client.admin_update_user_attributes(
+                UserPoolId=self.user_pool_id,
+                Username=username,
+                UserAttributes=user_attributes,
+            )
+
+        except ClientError as err:
+            if err.response["Error"]["Code"] == "AliasExistsException":
+                raise AlreadyExistsError(
+                    f"User with email {user_attributes[0]['Value']} already exists"
+                ) from err
+            raise AuthClientError(f"Cognito client error: {str(err)}") from err
+        except BotoCoreError as err:
+            raise AuthClientError(f"AWS error: {str(err)}") from err
 
     def list_users(self):
         users = []

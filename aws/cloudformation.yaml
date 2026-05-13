@@ -38,6 +38,8 @@ Resources:
       Environment:
         Variables:
           COGNITO_USER_POOL_ID: !Ref CognitoUserPoolID
+          PROFILE_PICTURE_BUCKET_NAME: !Sub "${Environment}-huddle-profile-pictures"
+          ENVIRONMENT: !Ref Environment
 
   LambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -90,6 +92,15 @@ Resources:
                   - cognito-idp:AdminEnableUser
                   - cognito-idp:ListUsers
                 Resource: !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolID}"
+        - PolicyName: S3ProfilePicturesAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:PutObjectAcl
+                Resource: !Sub "arn:aws:s3:::${Environment}-huddle-profile-pictures/*"
 
   ApiGateway:
     Type: AWS::ApiGateway::RestApi
@@ -191,6 +202,35 @@ Resources:
         - birthdate
 
   #
+  # Storage Resources
+  #
+  ProfilePicturesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${Environment}-huddle-profile-pictures"
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        IgnorePublicAcls: false
+        BlockPublicPolicy: false
+        RestrictPublicBuckets: false
+
+  ProfilePicturesBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ProfilePicturesBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action: s3:GetObject
+            Resource: !Sub "${ProfilePicturesBucket.Arn}/*"
+
+  #
   # Database Resources
   #
   MembershipsTable:
@@ -239,8 +279,6 @@ Resources:
         - AttributeName: push_token
           KeyType: RANGE
       GlobalSecondaryIndexes:
-        # Lets us look up/deactivate a device token when we only have the
-        # Expo push token string (e.g. from DeviceNotRegisteredError).
         - IndexName: push_token-index
           KeySchema:
             - AttributeName: push_token
@@ -273,3 +311,5 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
+      SSESpecification:
+        SSEEnabled: true
